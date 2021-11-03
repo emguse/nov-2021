@@ -10,6 +10,8 @@ OS_DIG = 0.5 * 2 ** 24 # For Differential Operating Range sensors
 FSS_IN_H2O = 2 * 0.5 # For Differential Operating Range sensors : 2 x Full Scale Pressure.
 PA_CONVERSION = 249.089 # Conversion factor from "inH2O" to "Pa"
 FSS_PA = FSS_IN_H2O * PA_CONVERSION
+ZERO_OFFSET = 2
+SEND_AFTER_READ = 0.014
 
 START_SINGLE = 0xAA
 START_AVERAGE2 = 0xAC
@@ -34,39 +36,34 @@ class DLHR_F50D():
         pass
 
     def send_start(self):
-        self.bus.write_byte_data(self.address, 0x00, START_SINGLE)
+        self.bus.write_byte(self.address, START_AVERAGE4)
     
     def status_read(self):
         self.status = self.bus.read_byte_data(self.address, 0x00)
-        if self.status and 0x40 == 0x40:
+        if self.status & 0x40 == 0x40:
             self.power = True
         else:
             self.power = False
-        if self.status and 0x20 == 0x20:
+        if self.status & 0x20 == 0x20:
             self.busy = True
         else:
             self.busy = False
         self.mode = (self.status and 0x18) >> 3
-        if self.status and 0x04 == 0x04:
+        if self.status & 0x04 == 0x04:
             self.memory_error = True
         else:
             self.memory_error = False
-        if self.status and 0x01 == 0x01:
+        if self.status & 0x01 == 0x01:
             self.alu_error = True
         else:
             self.alu_error = False
 
-    def read_busy(self) -> bool:
+    def read_busy(self):
         self.status = self.bus.read_byte_data(self.address, 0x00)
-        if self.status and 0x20 == 0x20:
+        if self.status & 0x20 == 0x20:
             self.busy = True
         else:
             self.busy = False
-        return self.busy
-
-    def poll_busy(self):
-        while self.read_busy():
-            time.sleep(0.00001)
     
     def correction_p(self):
         self.pressure = 1.25 * ((self.rawp - OS_DIG)/ 2**24) * FSS_PA
@@ -76,18 +73,18 @@ class DLHR_F50D():
 
     def read(self):
         data = self.bus.read_i2c_block_data(self.address, 0x00, 7)
-        self.rawp = data[2] << 16 | data[3] << 8 | data[4]
-        self.rawt = data[5] << 16 | data[6] << 8 | data[7]
+        self.rawp = (data[1] << 16) | (data[2] << 8) | data[3]
+        self.rawt = (data[4] << 16) | (data[5] << 8) | data[6]
 
     def read_p(self):
         self.send_start()
-        self.poll_busy()
+        time.sleep(SEND_AFTER_READ)
         self.read()
         self.correction_p()
     
     def read_t(self):
         self.send_start()
-        self.poll_busy()
+        time.sleep(SEND_AFTER_READ)
         self.read()
         self.correction_t()
 
@@ -95,8 +92,9 @@ def main():
     dlhr_f50d = DLHR_F50D()
     while True:
         dlhr_f50d.read_p()
-        print(dlhr_f50d.pressure)
-        time.sleep(0.01)
+        print("pressure :" + str(round(dlhr_f50d.pressure - ZERO_OFFSET ,4)))
+        #time.sleep(0.001)
+        time.sleep(0.5)
 
 if __name__ == '__main__':
     main()
