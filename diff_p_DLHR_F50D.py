@@ -39,7 +39,7 @@ class DLHR_F50D():
         self.bus.write_byte(self.address, START_AVERAGE4)
     
     def status_read(self):
-        self.status = self.bus.read_byte_data(self.address, 0x00)
+        self.status = self.bus.read_byte(self.address)
         if self.status & 0x40 == 0x40:
             self.power = True
         else:
@@ -58,12 +58,17 @@ class DLHR_F50D():
         else:
             self.alu_error = False
 
-    def read_busy(self):
-        self.status = self.bus.read_byte_data(self.address, 0x00)
+    def read_busy(self) -> bool:
+        self.status = self.bus.read_byte(self.address)
         if self.status & 0x20 == 0x20:
             self.busy = True
         else:
             self.busy = False
+        return self.busy
+    
+    def poll_busy(self):
+        while self.read_busy():
+            time.sleep(0.00001)
     
     def correction_p(self):
         self.pressure = 1.25 * ((self.rawp - OS_DIG)/ 2**24) * FSS_PA
@@ -78,13 +83,13 @@ class DLHR_F50D():
 
     def read_p(self):
         self.send_start()
-        time.sleep(SEND_AFTER_READ)
+        self.poll_busy()
         self.read()
         self.correction_p()
     
     def read_t(self):
         self.send_start()
-        time.sleep(SEND_AFTER_READ)
+        self.poll_busy()
         self.read()
         self.correction_t()
 
@@ -93,8 +98,8 @@ def main():
     while True:
         dlhr_f50d.read_p()
         print("pressure :" + str(round(dlhr_f50d.pressure - ZERO_OFFSET ,4)))
-        #time.sleep(0.001)
-        time.sleep(0.5)
+        #time.sleep(0.005)
+        time.sleep(1)
 
 if __name__ == '__main__':
     main()
