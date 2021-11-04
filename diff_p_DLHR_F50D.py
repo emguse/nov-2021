@@ -3,15 +3,15 @@ import time
 
 # All sensoers (Amphenol) DLHR-F50D-E1BD-C-NAV8
 # for Raspberry Pi
+# 2021/11/04 ver.1.0
 
 ADDRESS = 0x29
 
 OS_DIG = 0.5 * 2 ** 24 # For Differential Operating Range sensors
 FSS_IN_H2O = 2 * 0.5 # For Differential Operating Range sensors : 2 x Full Scale Pressure.
 PA_CONVERSION = 249.089 # Conversion factor from "inH2O" to "Pa"
-FSS_PA = FSS_IN_H2O * PA_CONVERSION
-ZERO_OFFSET = 2
-SEND_AFTER_READ = 0.014
+FSS_PA = FSS_IN_H2O * PA_CONVERSION # FSS/2 for "Pa"
+ZERO_OFFSET = 2 # Zero point correction
 
 START_SINGLE = 0xAA
 START_AVERAGE2 = 0xAC
@@ -68,7 +68,7 @@ class DLHR_F50D():
     
     def poll_busy(self):
         while self.read_busy():
-            time.sleep(0.00001)
+            pass
     
     def correction_p(self):
         self.pressure = 1.25 * ((self.rawp - OS_DIG)/ 2**24) * FSS_PA
@@ -93,12 +93,11 @@ class DLHR_F50D():
         self.read()
         self.correction_t()
 
-def main():
+def main(): # Sample usage
     dlhr_f50d = DLHR_F50D()
     while True:
         dlhr_f50d.read_p()
         print("pressure :" + str(round(dlhr_f50d.pressure - ZERO_OFFSET ,4)))
-        #time.sleep(0.005)
         time.sleep(1)
 
 if __name__ == '__main__':
