@@ -1,9 +1,11 @@
 from smbus2 import SMBus
 import time
 
-# All sensoers (Amphenol) DLHR-F50D-E1BD-C-NAV8
-# for Raspberry Pi
-# 2021/11/04 ver.1.0
+'''
+# 2021/11/05 ver.1.01
+# Author : emguse
+# License: MIT License
+'''
 
 ADDRESS = 0x29
 
@@ -20,6 +22,10 @@ START_AVERAGE8 = 0xAE
 START_AVERAGE16 = 0xAF
 
 class DLHR_F50D():
+    '''
+    # All sensoers (Amphenol) DLHR-F50D-E1BD-C-NAV8
+    # for Raspberry Pi
+    '''
     def __init__(self) -> None:
         self.address = ADDRESS
         self.status = 0x00
