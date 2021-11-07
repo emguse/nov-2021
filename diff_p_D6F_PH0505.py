@@ -2,7 +2,7 @@ from smbus2 import SMBus
 import time
 
 '''
-# 2021/11/07 ver.0.02
+# 2021/11/07 ver.0.03
 # Author : emguse
 # License: MIT License
 # Note: This code does not work yet. It has not been tested with a real sensor.
@@ -53,15 +53,17 @@ class D6F_PH0505():
         d = [0xD0 ,0x40 ,0x18, 0x06]
         self.bus.write_i2c_block_data(self.d6f_addres, 0x00, d)
         #Always read after 33 milliseconds have elapsed after the command is issued.
-    
+
     def read(self):
-        d1 = [0xD0, 0x51, 0x2C]
-        self.bus.write_i2c_block_data(self.d6f_addres, 0x00, d1)
         if CRC_ENABLE == True:
+            d1 = [0xD0, 0x51, 0x3C]
+            self.bus.write_i2c_block_data(self.d6f_addres, 0x00, d1)
             raw = self.bus.read_i2c_block_data(self.d6f_addres, 0x07, 3)
             if raw[2] != CRC(raw):
                 raise RuntimeError("CRC Error!!")
         else:
+            d1 = [0xD0, 0x51, 0x2C]
+            self.bus.write_i2c_block_data(self.d6f_addres, 0x00, d1)
             raw = self.bus.read_i2c_block_data(self.d6f_addres, 0x07, 2)
         pv = raw[0] << 8 | raw[1]
         self.dp = (pv - 1024) / 60000 * RANGE_100 - RANGE_100 / 2
