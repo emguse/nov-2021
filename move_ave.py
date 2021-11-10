@@ -2,19 +2,30 @@ from collections import deque
 
 class MovingAverage():
     def __init__(self, lenghs:int) -> None:
-        self.lenghs = lenghs
-        self.dq = deque([],maxlen=lenghs)
+        self.lenghs = abs(lenghs)
+        if self.lenghs == 0:
+            self.lenghs = 1
+        self.dq = deque([],maxlen=self.lenghs)
         pass
-    def move_average(self, new_value) -> float: 
+    def simple_moving_average(self, new_value) -> float: 
         self.dq.append(new_value)
-        m_ave = sum(self.dq) / self.lenghs
-        return m_ave
+        sma = sum(self.dq) / self.lenghs
+        return sma
+    def weighted_moving_average(self, new_value) -> float:
+        a = []
+        b = []
+        self.dq.append(new_value)
+        for i in range(len(self.dq)):
+            a.append(self.dq[i]*(i+1))
+            b.append(i + 1)
+        wma = sum(a) / sum(b)
+        return wma
 
 def main():
-    m_ave = MovingAverage(3)
+    ma = MovingAverage(5)
     l = [1,2,3,4,5,6,7,8,9,10]
     for i in l:
-        print(m_ave.move_average(i))
+        print(ma.weighted_moving_average(i))
 
 if __name__ == "__main__":
     main()
