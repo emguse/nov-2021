@@ -18,7 +18,7 @@ max_num = 32767.0 / max(wv)
 # Take the ratio of the value of one sample to the maximum value of 
 # the entire sample and multiply by 32767
 wv16 = [int(x * max_num) for x in wv] 
-# h:2byte (16bit) integer format (short for C)
+# h:2byte (16bit) integer format (short in C)
 bi_wv = struct.pack("h" *len(wv16), *wv16) 
 
 # File output
