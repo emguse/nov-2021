@@ -1,9 +1,10 @@
 import numpy as np
 import struct
 import wave
+import datetime
 
 '''
-- 2021/11/12 ver.0.01
+- 2021/11/12 ver.0.02
 - Author : emguse
 - License: MIT License
 '''
@@ -35,7 +36,7 @@ class WavSave():
         self.nchannels = nchannels
         self.sampwidth = sampwidth
         self.framerate = framerate
-    def set_path(self, save_dir :str, file_name :str, file_ext :str = '.wav') -> None:
+    def set_path(self, save_dir :str, file_name :str = 'wave', file_ext :str = '.wav') -> None:
         '''
         ### Set the path to save the file.
         - You can override the directory, file name and extension.
@@ -73,6 +74,16 @@ class WavSave():
             param = (1, 2, self.framerate, len(self.bin_wf),'NONE','not compressed')
             f.setparams(param)
             f.writeframes(self.bin_wf)
+    def save_w_date(self, data :list) -> None:
+        '''
+        ### Saves a file with the current date and time as the file name.
+        - The file name is the ISO format ':' and '. in the ISO format with '_'.
+        - For example, '2021-11-13T14_01_39_244906.wav'.
+        '''
+        now = datetime.datetime.now()
+        dat = now.strftime('%Y-%m-%d') + 'T' + now.strftime('%H_%M_%S_%f')
+        self.set_path(self.save_dir, dat, self.ext)
+        self.save(data)
 
 def main():
     # Waveform generation
@@ -85,8 +96,7 @@ def main():
     wavesave = WavSave()
     wavesave.set_wav_param(1,2,44100)
     wavesave.set_norm(1)
-    wavesave.set_path('./', 'test')
-    wavesave.save(wf)
+    wavesave.save_w_date(wf)
 
 if __name__ == '__main__':
     main()
