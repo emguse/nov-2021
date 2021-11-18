@@ -2,7 +2,7 @@ from smbus2 import SMBus
 import time
 
 '''
-- 2021/11/17 ver.1.00
+- 2021/11/18 ver.1.01
 - Author : emguse
 - License: MIT License
 '''
@@ -39,7 +39,7 @@ class D6F_PH0505():
         self.d6f_addres = I2C_ADDRES
         self.crc_enable = CRC_ENABLE
         self.bus = SMBus(1)
-        self.dp = 0
+        self.diff_p = 0
         time.sleep(0.0002)
         self.initializing()
         if self.crc_enable == True:
@@ -81,7 +81,7 @@ class D6F_PH0505():
         else:
             raw = self.bus.read_i2c_block_data(self.d6f_addres, 0x07, 2)
         pv = raw[0] << 8 | raw[1]
-        self.dp = (pv - 1024) / 60000 * RANGE_100 - RANGE_100 / 2
+        self.diff_p = (pv - 1024) / 60000 * RANGE_100 - RANGE_100 / 2
     def hw_reset(self):
         '''
         ### A hardware reset is performed by writing 1 to bit 7 of the power sequence register.
@@ -94,7 +94,7 @@ def main():
         d6f_ph0505.start_measurement()
         time.sleep(0.033)
         d6f_ph0505.read()
-        print("diff_p:" + str(round(d6f_ph0505.dp, 4)))
+        print("diff_p:" + str(round(d6f_ph0505.diff_p, 4)))
         time.sleep(0.005)
 
 if __name__ == '__main__':
