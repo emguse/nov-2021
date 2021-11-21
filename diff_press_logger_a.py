@@ -4,14 +4,14 @@ from move_ave import MovingAverage
 from collections import deque
 from wave_save import WavSave
 import datetime
-import csv
 
 SAMPLE_FREQ = 32 # Hz
 SAMPLE_INTERVAL = 1/SAMPLE_FREQ # 
-IVENT_LENGTH = 1 # sec
+IVENT_LENGTH = 30 # sec
 QUE_SIZE = int(IVENT_LENGTH/2 * SAMPLE_FREQ)
 MOVE_AVE_LENGTH = 8
-THRESHOLD = 1.0
+REFARENCE_PAST_SAMPLE = 4
+THRESHOLD = 0.1
 MAX_VALUE = 125
 SAVE_DIR = './log/'
 
@@ -38,6 +38,7 @@ def main():
     record_intarval = PollingTimer(1)#IVENT_LENGTH)
     ma = MovingAverage(MOVE_AVE_LENGTH)
     dq_p = deque(maxlen=QUE_SIZE)
+    dq_ref = deque(maxlen=REFARENCE_PAST_SAMPLE)
     dq_after = deque(maxlen=QUE_SIZE)
 
     wavesave = WavSave()
@@ -50,7 +51,8 @@ def main():
             dlhr_f50d.read_p()
             ma_p = ma.simple_moving_average(dlhr_f50d.pressure - ZERO_OFFSET)
             dq_p.append(ma_p)
-            if THRESHOLD <= abs(ma_p):
+            dq_ref.append(ma_p)
+            if abs(dq_ref[0])+THRESHOLD <= abs(ma_p):
                 record_intarval.timer_update_only()
                 if record_intarval.up_state == True:
                     record_intarval.up_state = False
@@ -68,6 +70,7 @@ def main():
                                 dlhr_f50d.read_p()
                                 ma_p = ma.simple_moving_average(dlhr_f50d.pressure - ZERO_OFFSET)
                                 dq_after.append(ma_p)
+                                dq_ref.append(ma_p)
                                 break
                     ar = list(dq_p)
                     ar.extend(dq_after)
