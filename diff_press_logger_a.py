@@ -3,19 +3,25 @@ from polling_timer import PollingTimer
 from move_ave import MovingAverage
 from collections import deque
 from wave_save import WavSave
+from buzz_pipi_r import PiPi
 import datetime
+import multiprocessing as mp
 
 SAMPLE_FREQ = 32 # Hz
 SAMPLE_INTERVAL = 1/SAMPLE_FREQ # 
 IVENT_LENGTH = 30 # sec
 QUE_SIZE = int(IVENT_LENGTH/2 * SAMPLE_FREQ)
-MOVE_AVE_LENGTH = 8
+MOVE_AVE_LENGTH = 4
 REFARENCE_PAST_SAMPLE = 4
-THRESHOLD = 0.1
+THRESHOLD = 0.4
 MAX_VALUE = 125
 SAVE_DIR = './log/'
 
 ZERO_OFFSET = 1.9 # Zero point correction
+
+def sound_buzzer():
+    pipi = PiPi()
+    pipi.pipi()
 
 def export_csv(d_a):
     now = datetime.datetime.now()
@@ -35,15 +41,29 @@ def export_csv(d_a):
 def main():
     dlhr_f50d = DLHR_F50D.DLHR_F50D()
     read_intarval = PollingTimer(SAMPLE_INTERVAL)
-    record_intarval = PollingTimer(1)#IVENT_LENGTH)
+    record_intarval = PollingTimer(IVENT_LENGTH)
+    record_intarval.up_state = True
     ma = MovingAverage(MOVE_AVE_LENGTH)
     dq_p = deque(maxlen=QUE_SIZE)
     dq_ref = deque(maxlen=REFARENCE_PAST_SAMPLE)
     dq_after = deque(maxlen=QUE_SIZE)
 
+    q = mp.Queue()
+    buzzer_process = mp.Process(target=sound_buzzer)
+
     wavesave = WavSave()
     wavesave.set_wav_param(1,2,SAMPLE_FREQ)
     wavesave.set_norm(MAX_VALUE)
+
+    for _ in range(MOVE_AVE_LENGTH):
+        while True:
+            read_intarval.timer_update()
+            if read_intarval.up_state == True:
+                dlhr_f50d.read_p()
+                ma_p = ma.simple_moving_average(dlhr_f50d.pressure - ZERO_OFFSET)
+                dq_p.append(ma_p)
+                dq_ref.append(ma_p)
+                break
 
     while True:
         read_intarval.timer_update()
@@ -57,7 +77,8 @@ def main():
                 if record_intarval.up_state == True:
                     record_intarval.up_state = False
 
-                    print('Detect!!')
+                    buzzer_process.start()
+                    print('Detect')
                     now = datetime.datetime.now()
                     print(now.strftime('%Y-%m-%d') + 'T' + now.strftime('%H_%M_%S_%f'))
                     print(ma_p)
