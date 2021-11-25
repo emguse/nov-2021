@@ -4,6 +4,7 @@ from move_ave import MovingAverage
 from collections import deque
 from wave_save import WavSave
 from buzz_pipi_r import PiPi
+from print_with_DP_EH600 import PrintWithDpEh600
 import datetime
 import multiprocessing as mp
 
@@ -18,6 +19,14 @@ MAX_VALUE = 125
 SAVE_DIR = './log/'
 
 ZERO_OFFSET = 1.9 # Zero point correction
+USE_PRINTER = True
+
+def thermal_printing(data) -> None:
+    if USE_PRINTER == True:
+        for s in data:
+            p = PrintWithDpEh600()
+            p.printing(s)
+        p.line_feed(1)
 
 def sound_buzzer():
     pipi = PiPi()
@@ -41,15 +50,12 @@ def export_csv(d_a):
 def main():
     dlhr_f50d = DLHR_F50D.DLHR_F50D()
     read_intarval = PollingTimer(SAMPLE_INTERVAL)
-    record_intarval = PollingTimer(IVENT_LENGTH)
+    record_intarval = PollingTimer(IVENT_LENGTH/2)
     record_intarval.up_state = True
     ma = MovingAverage(MOVE_AVE_LENGTH)
     dq_p = deque(maxlen=QUE_SIZE)
     dq_ref = deque(maxlen=REFARENCE_PAST_SAMPLE)
     dq_after = deque(maxlen=QUE_SIZE)
-
-    q = mp.Queue()
-    buzzer_process = mp.Process(target=sound_buzzer)
 
     wavesave = WavSave()
     wavesave.set_wav_param(1,2,SAMPLE_FREQ)
@@ -77,12 +83,15 @@ def main():
                 if record_intarval.up_state == True:
                     record_intarval.up_state = False
 
+                    buzzer_process = mp.Process(target=sound_buzzer)
                     buzzer_process.start()
-                    print('Detect')
+                    
+                    data = []
                     now = datetime.datetime.now()
-                    print(now.strftime('%Y-%m-%d') + 'T' + now.strftime('%H_%M_%S_%f'))
-                    print(ma_p)
-                    print(sum(dq_p)/len(dq_p))
+                    data.append(now.strftime('%Y-%m-%d') + 'T' + now.strftime('%H:%M:%S.%f'))
+                    data.append('DP:' + str(round(ma_p, 4)) + '  delta:' + str(round((dq_ref[0] - ma_p),4)))
+                    print_process = mp.Process(target=thermal_printing, args=(data,))
+                    print_process.start()
 
                     for i in range(QUE_SIZE):
                         while True:
