@@ -2,7 +2,7 @@ from thermalprinter import *
 from PIL import Image,ImageDraw,ImageFont
 
 '''
-- 2021/11/24 ver.1.00
+- 2021/11/27 ver.1.01
 - Author : emguse
 - License: MIT License
 '''
@@ -62,6 +62,7 @@ class PrintWithDpEh600():
                 self.draw.text((0, 0), str(data), font=self.font, fill=0)
                 printer.image(self.image)
         except:
+            print('Printer other errors')
             pass
     def line_feed(self, line :int) -> None:
         '''
@@ -72,16 +73,29 @@ class PrintWithDpEh600():
             with ThermalPrinter(port='/dev/serial0', baudrate=115200) as printer:
                 printer.feed(line)
         except:
+            print('line feed error')
+            pass
+    def online(self) -> None:
+        try:
+            with ThermalPrinter(port='/dev/serial0', baudrate=115200) as printer:
+                printer.online()
+        except:
+            print('printer error')
             pass
 
 def main():
     p = PrintWithDpEh600()
-    p.printing("１２３４５６７８９０１２３４５６")
-    data1 = "YYYY-mm-ddTHH:MM:SS:ffffff"
-    p.printing(data1)
-    data2 = "-0.8936"
-    p.printing(data2)
+    import datetime
+    now = datetime.datetime.now()
+    p.printing(now)
     p.line_feed(2)
+
+    p = PrintWithDpEh600()
+    data = ['2021-11-27T20:51:11.762737', 'DP:-0.3558  delta P:0.2208']
+    for s in data:
+        p.set_canvas()
+        p.printing(s)
+    p.line_feed(1)
 
 if __name__ == '__main__':
     main()
