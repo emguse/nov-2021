@@ -1,0 +1,19 @@
+import board
+import busio
+import time
+#from adafruit_bus_device.i2c_device import I2CDevice
+
+i2c = busio.I2C(scl=board.GP1, sda=board.GP0) # Pi Pico RP2040 (SDA0,SCL0)
+while not i2c.try_lock():
+    pass
+
+try:
+    while True:
+        print(
+            "I2C addresses found:",
+            [hex(device_address) for device_address in i2c.scan()],
+        )
+        time.sleep(2)
+
+finally:  # unlock the i2c bus when ctrl-c'ing out of the loop
+    i2c.unlock()
