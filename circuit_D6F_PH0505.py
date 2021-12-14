@@ -11,11 +11,10 @@ I2C_ADDRES = 0x6C  # i2c addres
 CRC_ENABLE = False
 
 class DifferentialPressureSensorD6F_PH0505():
-    def __init__(self) -> None:
+    def __init__(self, i2c: I2C) -> None:
         self.d6f_addres = I2C_ADDRES
         self.crc_enable = CRC_ENABLE
-        self.i2c = busio.I2C(scl=board.GP1, sda=board.GP0)
-        self.device = I2CDevice(self.i2c, self.d6f_addres)
+        self.device = I2CDevice(i2c, self.d6f_addres)
         self.diff_p = 0
         with self.device:
             init_order = bytes([0x0B, 0x00])
@@ -63,8 +62,11 @@ class DifferentialPressureSensorD6F_PH0505():
             reset_order = bytes([0x00, 0x80])
             self.device.write(reset_order)
 
-def main():
-    d6f_ph0505 = DifferentialPressureSensorD6F_PH0505()
+def main(): 
+    I2C_SCL = board.GP1
+    I2C_SDA = board.GP0  
+    i2c = busio.I2C(scl=I2C_SCL, sda=I2C_SDA)
+    d6f_ph0505 = DifferentialPressureSensorD6F_PH0505(i2c)
     while True:
         d6f_ph0505.start_order()
         d6f_ph0505.read_order()
